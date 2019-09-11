@@ -69,7 +69,7 @@ int32_t parseUnsignedInt32(char sep) {
     return -1;
   }
   int32_t ret = 0;
-  while  (offset < file_size && *(file_mmap + offset) != sep && *(file_mmap + offset) != '\n') {
+  while (offset < file_size && *(file_mmap + offset) != sep && *(file_mmap + offset) != '\n') {
     if (*(file_mmap + offset) < 48 || *(file_mmap + offset) > 57) {
       cerr << "Error: Invalid number: " << *(file_mmap + offset) << "\n";
       return -1;
@@ -83,7 +83,7 @@ int32_t parseUnsignedInt32(char sep) {
 }
 
 bool parseToken(const std::string &expected, char sep) {
-  std::string token  = parseString(sep);
+  std::string token = parseString(sep);
   if (token != expected) {
     cerr << "Error: Unexpected token: " << token << "\n";
     return false;
@@ -177,11 +177,28 @@ Macroblock parseMB() {
 }
 
 int main(int32_t argc, char **argv) {
+  std::string dot_file_prefix;
+  std::string summary_file_prefix;
+  std::string dot_parameter = "--dot";
+  std::string summary_parameter = "--summary";
   if (argc < 2) {
-    cout << "usage: " << argv[0] << " <path/to/file>\n";
+    cout << "usage: " << argv[0] << " <path/to/file> [--dot <dot-file-prefix>] [--summary <summary-file-prefix>]\n";
     return 1;
   }
   std::string log_file_path = argv[1];
+  for (int32_t i = 2; i < argc; i++) {
+    std::string next_arg = argv[i];
+    if (!next_arg.compare(0, next_arg.size(), dot_parameter) && i + 1 < argc) {
+      dot_file_prefix = argv[i + 1];
+      i++;
+    } else if (!next_arg.compare(0, next_arg.size(), summary_parameter) && i + 1 < argc) {
+      summary_file_prefix = argv[i + 1];
+      i++;
+    } else {
+      cerr << "Unknown parameter or missing argument: " << argv[i] << "\n";
+      return 1;
+    }
+  }
   file_mmap = nullptr;
   file_size = 0;
 
@@ -192,7 +209,9 @@ int main(int32_t argc, char **argv) {
   std::vector<Chunk> chunks;
   std::vector<Frame> frames;
   std::vector<Macroblock> mbs;
+  bool first_chunk = true;
   offset = 0;
+  cout << "Parsing file " << log_file_path << '\n';
   while (offset < file_size) {
     if (*(file_mmap + offset) != '[') {
       seek('\n');
@@ -209,10 +228,14 @@ int main(int32_t argc, char **argv) {
       Frame next = parseFrame();
       if (next.poc >= 0) {
         if (next.type == 'I') {
-          cout << "NEW CHUNK\n";
-          chunks.emplace_back(Chunk{frames, mbs});
-          frames.clear();
-          mbs.clear();
+          // Prevent that we add an empty first chunk.
+          if (!first_chunk) {
+            chunks.emplace_back(Chunk{frames, mbs});
+            frames.clear();
+            mbs.clear();
+          } else {
+            first_chunk = false;
+          }
         }
         frames.push_back(next);
       }
@@ -225,16 +248,32 @@ int main(int32_t argc, char **argv) {
       }
     }
   }
+  // Add last chunk
+  if (!frames.empty() && !mbs.empty()) {
+    chunks.emplace_back(Chunk{frames, mbs});
+  }
+
+  cout << "Parsed " << chunks.size() << " chunks\n";
 
   if (munmap(file_mmap, file_size) < 0) {
     cerr << "munmap: " << strerror(errno) << "\n";
   }
-  ReferenceGraph graph(chunks[1]);
-  graph.buildWeights();
-  graph.printAsDot("1.dot");
-  ReferenceGraph graph2(chunks[2]);
-  graph2.buildWeights();
-  graph2.printAsDot("2.dot");
 
+  uint32_t chunk_count = 1;
+  for (auto &chunk : chunks) {
+    cout << "Processing chunk " << chunk_count << " (" << chunk.frames.size() << " frames | " << chunk.mbs.size()
+         << " macroblocks)\n";
+    ReferenceGraph graph(chunk);
+    graph.buildWeights();
+    if (!dot_file_prefix.empty()) {
+      std::string suffix = "-" + std::to_string(chunk_count) + ".dot";
+      graph.printAsDot(dot_file_prefix + suffix);
+    }
+    if (!summary_file_prefix.empty()) {
+      std::string suffix = "-" + std::to_string(chunk_count) + ".csv";
+      graph.printSummary(summary_file_prefix + suffix);
+    }
+    chunk_count++;
+  }
   return 0;
 }

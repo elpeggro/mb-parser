@@ -11,6 +11,7 @@ ReferenceGraph::ReferenceGraph(const Chunk &chunk) : frames(chunk.frames), mbs(c
 }
 void ReferenceGraph::buildWeights() {
   for (auto &mb : mbs) {
+    total_weights[mb.poc_ref]++;
     FrameWeights& ref_frame = graph[mb.poc_ref];
     ref_frame[mb.poc]++;
     if (ref_frame[mb.poc] > max_weight) {
@@ -34,4 +35,15 @@ void ReferenceGraph::printAsDot(const std::string &path) {
   }
   out << "}";
   out.close();
+}
+
+void ReferenceGraph::printSummary(const std::string &path) {
+  std::ofstream out(path);
+  if (out.fail()) {
+    std::cerr << "Error: Failed to open output file " << path << "\n";
+    return;
+  }
+  for(auto & weight_it : total_weights) {
+    out << weight_it.first << "," << weight_it.second << "\n";
+  }
 }

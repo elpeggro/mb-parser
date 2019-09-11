@@ -6,7 +6,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-Wall ${CMAKE_CXX_FLAGS_DEBUG}")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 ${CMAKE_CXX_FLAGS_RELEASE}")
 
 set(MB_PARSER_SRC_FILES
-        src/main.cpp
+        src/mb_parser.cpp
         src/structs.h
         src/ReferenceGraph)
 
