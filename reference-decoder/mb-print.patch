@@ -1,0 +1,165 @@
+diff -urBZ JM-ref/ldecod/src/decoder_test.c JM/ldecod/src/decoder_test.c
+--- JM-ref/ldecod/src/decoder_test.c	2019-09-11 11:42:08.022223489 +0200
++++ JM/ldecod/src/decoder_test.c	2019-07-05 11:48:58.371300126 +0200
+@@ -246,7 +246,7 @@
+     if(iRet==DEC_EOS || iRet==DEC_SUCCEED)
+     {
+       //process the decoded picture, output or display;
+-      iFramesOutput += WriteOneFrame(pDecPicList, hFileDecOutput0, hFileDecOutput1, 0);
++      //iFramesOutput += WriteOneFrame(pDecPicList, hFileDecOutput0, hFileDecOutput1, 0);
+       iFramesDecoded++;
+     }
+     else
+@@ -257,7 +257,7 @@
+   }while((iRet == DEC_SUCCEED) && ((p_Dec->p_Inp->iDecFrmNum==0) || (iFramesDecoded<p_Dec->p_Inp->iDecFrmNum)));
+ 
+   iRet = FinitDecoder(&pDecPicList);
+-  iFramesOutput += WriteOneFrame(pDecPicList, hFileDecOutput0, hFileDecOutput1 , 1);
++  //iFramesOutput += WriteOneFrame(pDecPicList, hFileDecOutput0, hFileDecOutput1 , 1);
+   iRet = CloseDecoder();
+ 
+   //quit;
+diff -urBZ JM-ref/ldecod/src/image.c JM/ldecod/src/image.c
+--- JM-ref/ldecod/src/image.c	2019-09-11 11:42:08.046223490 +0200
++++ JM/ldecod/src/image.c	2019-09-11 11:46:40.182236467 +0200
+@@ -2060,6 +2060,30 @@
+ 
+   if ((structure==FRAME)||structure==BOTTOM_FIELD)
+   {
++    /************************
++     * MALTE
++     ************************/
++    char *slice_type_str;
++    switch (slice_type) {
++      case (P_SLICE): {
++        slice_type_str = "P";
++        break;
++      }
++      case (B_SLICE): {
++        slice_type_str = "B";
++        break;
++      }
++      case (I_SLICE): {
++        slice_type_str = "I";
++        break;
++      }
++      default:
++        slice_type_str = "?";
++    }
++    printf("[frame] type: %s poc: %d\n", slice_type_str, frame_poc);
++    /************************
++     * MALTE END
++     ************************/
+     gettime (&(p_Vid->end_time));              // end time
+ 
+     tmp_time  = timediff(&(p_Vid->start_time), &(p_Vid->end_time));
+diff -urBZ JM-ref/ldecod/src/macroblock.c JM/ldecod/src/macroblock.c
+--- JM-ref/ldecod/src/macroblock.c	2019-09-11 11:42:08.102223493 +0200
++++ JM/ldecod/src/macroblock.c	2019-09-11 11:52:42.894253762 +0200
+@@ -359,6 +359,33 @@
+  */
+ static void readMBMotionVectors (SyntaxElement *currSE, DataPartition *dP, Macroblock *currMB, int list, int step_h0, int step_v0)
+ {
++  /************************
++   * MALTE
++   ************************/
++  Slice *currSlice = currMB->p_Slice;
++  int list_offset = currMB->list_offset;
++  StorablePicture **list0 = currSlice->listX[LIST_0 + list_offset];
++  StorablePicture **list1 = currSlice->listX[LIST_1 + list_offset];
++  char *slice_type;
++  switch (currSlice->slice_type) {
++    case (P_SLICE): {
++      slice_type = "P";
++      break;
++    }
++    case (B_SLICE): {
++      slice_type = "B";
++      break;
++    }
++    case (I_SLICE): {
++      slice_type = "I";
++      break;
++    }
++    default:
++      slice_type = "?";
++  }
++  /************************
++   * MALTE END
++   ************************/
+   if (currMB->mb_type == 1)
+   {
+     if ((currMB->b8pdir[0] == list || currMB->b8pdir[0]== BI_PRED))//has forward vector
+@@ -401,6 +428,36 @@
+       curr_mv.mv_x = (short)(curr_mvd[0] + pred_mv.mv_x);  // compute motion vector x
+       curr_mv.mv_y = (short)(curr_mvd[1] + pred_mv.mv_y);  // compute motion vector y
+ 
++      /************************
++       * MALTE
++       ************************/
++      if (currMB->mb_type != P8x8 && !currMB->skip_flag) {
++        int cur_ref_idx = mv_info[j4][i4].ref_idx[list];
++        if (list == 0) {
++          printf("[mb] type: %s poc: %d x: %d y: %d list: %d poc_ref: %d idx: %d\n",
++                 slice_type,
++                 currMB->p_Slice->framepoc,
++                 currMB->block_x,
++                 currMB->block_y,
++                 list,
++                 list0[cur_ref_idx]->poc,
++                 cur_ref_idx);
++        } else if (list == 1) {
++          printf("[mb] type: %s poc: %d x: %d y: %d list: %d poc_ref: %d idx: %d\n",
++                 slice_type,
++                 currMB->p_Slice->framepoc,
++                 currMB->block_x,
++                 currMB->block_y,
++                 list,
++                 list1[cur_ref_idx]->poc,
++                 cur_ref_idx);
++        } else {
++          printf("[mb_err] mb with list != 0 or 1??\n");
++        }
++      }
++      /************************
++       * MALTE END
++       ************************/
+       for(jj = j4; jj < j4 + step_v0; ++jj)
+       {
+         PicMotionParams *mvinfo = mv_info[jj] + i4;
+@@ -480,6 +537,35 @@
+               curr_mv.mv_x = (short)(curr_mvd[0] + pred_mv.mv_x);  // compute motion vector 
+               curr_mv.mv_y = (short)(curr_mvd[1] + pred_mv.mv_y);  // compute motion vector 
+ 
++              /************************
++               * MALTE
++               ************************/
++              if (currMB->mb_type != P8x8 && !currMB->skip_flag) {
++                if (list == 0) {
++                  printf("[mb] type: %s poc: %d x: %d y: %d list: %d poc_ref: %d idx: %d\n",
++                         slice_type,
++                         currMB->p_Slice->framepoc,
++                         currMB->block_x,
++                         currMB->block_y,
++                         list,
++                         list0[cur_ref_idx]->poc,
++                         cur_ref_idx);
++                } else if (list == 1) {
++                  printf("[mb] type: %s poc: %d x: %d y: %d list: %d poc_ref: %d idx: %d\n",
++                         slice_type,
++                         currMB->p_Slice->framepoc,
++                         currMB->block_x,
++                         currMB->block_y,
++                         list,
++                         list1[cur_ref_idx]->poc,
++                         cur_ref_idx);
++                } else {
++                  printf("[mb_err] mb with list != 0 or 1??\n");
++                }
++              }
++              /************************
++               * MALTE END
++               ************************/
+               for(jj = j4; jj < j4 + step_v; ++jj)
+               {
+                 PicMotionParams *mvinfo = mv_info[jj] + i4;
