@@ -14,7 +14,7 @@ using std::cout;
 using std::cerr;
 
 uint8_t *file_mmap;
-uint32_t offset;
+size_t offset;
 size_t file_size;
 
 int32_t mmapFile(const std::string &path) {
