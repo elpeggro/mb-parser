@@ -43,7 +43,7 @@ void ReferenceGraph::printSummary(const std::string &path) {
     std::cerr << "Error: Failed to open output file " << path << "\n";
     return;
   }
-  for(auto & weight_it : total_weights) {
-    out << weight_it.first << "," << weight_it.second << "\n";
+  for(auto & frame : frames) {
+    out << frame.poc << " " << total_weights[frame.poc] << "\n";
   }
 }

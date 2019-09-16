@@ -270,7 +270,7 @@ int main(int32_t argc, char **argv) {
       graph.printAsDot(dot_file_prefix + suffix);
     }
     if (!summary_file_prefix.empty()) {
-      std::string suffix = "-" + std::to_string(chunk_count) + ".csv";
+      std::string suffix = "-" + std::to_string(chunk_count) + ".dat";
       graph.printSummary(summary_file_prefix + suffix);
     }
     chunk_count++;
