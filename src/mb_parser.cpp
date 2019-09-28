@@ -179,10 +179,13 @@ Macroblock parseMB() {
 int main(int32_t argc, char **argv) {
   std::string dot_file_prefix;
   std::string summary_file_prefix;
+  size_t segment_size = 0;
   std::string dot_parameter = "--dot";
   std::string summary_parameter = "--summary";
+  std::string segment_size_parameter = "--segment-size";
   if (argc < 2) {
-    cout << "usage: " << argv[0] << " <path/to/file> [--dot <dot-file-prefix>] [--summary <summary-file-prefix>]\n";
+    cout << "usage: " << argv[0]
+         << " <path/to/file> [--dot <dot-file-prefix>] [--summary <summary-file-prefix>] [--segment-size <segment-size>]\n";
     return 1;
   }
   std::string log_file_path = argv[1];
@@ -193,6 +196,9 @@ int main(int32_t argc, char **argv) {
       i++;
     } else if (!next_arg.compare(0, next_arg.size(), summary_parameter) && i + 1 < argc) {
       summary_file_prefix = argv[i + 1];
+      i++;
+    } else if (!next_arg.compare(0, next_arg.size(), segment_size_parameter) && i + 1 < argc) {
+      segment_size = std::stoul(argv[i + 1]);
       i++;
     } else {
       cerr << "Unknown parameter or missing argument: " << argv[i] << "\n";
@@ -210,6 +216,10 @@ int main(int32_t argc, char **argv) {
   std::vector<Frame> frames;
   std::vector<Macroblock> mbs;
   bool first_chunk = true;
+  if (segment_size > 0) {
+    // Fixed segment size does not need first chunk detection.
+    first_chunk = false;
+  }
   offset = 0;
   cout << "Parsing file " << log_file_path << '\n';
   while (offset < file_size) {
@@ -227,7 +237,8 @@ int main(int32_t argc, char **argv) {
       offset += 7;
       Frame next = parseFrame();
       if (next.poc >= 0) {
-        if (next.type == 'I') {
+        if ((segment_size > 0 && frames.size() == segment_size)
+            || (segment_size == 0 && next.type == 'I')) {
           // Prevent that we add an empty first chunk.
           if (!first_chunk) {
             chunks.emplace_back(Chunk{frames, mbs});
