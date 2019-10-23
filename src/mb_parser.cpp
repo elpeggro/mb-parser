@@ -179,13 +179,15 @@ Macroblock parseMB() {
 int main(int32_t argc, char **argv) {
   std::string dot_file_prefix;
   std::string summary_file_prefix;
+  std::string dat_file_prefix;
   size_t segment_size = 0;
   std::string dot_parameter = "--dot";
   std::string summary_parameter = "--summary";
+  std::string dat_parameter = "--dat";
   std::string segment_size_parameter = "--segment-size";
   if (argc < 2) {
     cout << "usage: " << argv[0]
-         << " <path/to/file> [--dot <dot-file-prefix>] [--summary <summary-file-prefix>] [--segment-size <segment-size>]\n";
+         << " <path/to/file> [--dot <dot-file-prefix>] [--summary <summary-file-prefix>] [--dat <dat-file-prefix>] [--segment-size <segment-size>]\n";
     return 1;
   }
   std::string log_file_path = argv[1];
@@ -196,6 +198,9 @@ int main(int32_t argc, char **argv) {
       i++;
     } else if (!next_arg.compare(0, next_arg.size(), summary_parameter) && i + 1 < argc) {
       summary_file_prefix = argv[i + 1];
+      i++;
+    } else if (!next_arg.compare(0, next_arg.size(), dat_parameter) && i + 1 < argc) {
+      dat_file_prefix = argv[i + 1];
       i++;
     } else if (!next_arg.compare(0, next_arg.size(), segment_size_parameter) && i + 1 < argc) {
       segment_size = std::stoul(argv[i + 1]);
@@ -283,6 +288,10 @@ int main(int32_t argc, char **argv) {
     if (!summary_file_prefix.empty()) {
       std::string suffix = "-" + std::to_string(chunk_count) + ".dat";
       graph.printSummary(summary_file_prefix + suffix);
+    }
+    if (!dat_file_prefix.empty()) {
+      std::string suffix = "-" + std::to_string(chunk_count) + ".dat";
+      graph.printAsDat(dat_file_prefix + suffix);
     }
     chunk_count++;
   }

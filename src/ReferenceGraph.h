@@ -14,6 +14,7 @@ class ReferenceGraph {
   void buildWeights();
   void printAsDot(const std::string &path);
   void printSummary(const std::string &path);
+  void printAsDat(const std::string &path);
 
  private:
   static constexpr double MAX_THICKNESS = 5;
