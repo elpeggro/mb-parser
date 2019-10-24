@@ -58,6 +58,11 @@ void ReferenceGraph::printAsDat(const std::string &path) {
   out << "frame mb_count referenced_by_frame\n";
   for (auto &frame : frames) {
     FrameWeights &weights = graph[frame.poc];
+    if (weights.empty()) {
+      // Create special zero line to indicate sink.
+      out << frame.poc << " 0 0\n";
+      continue;
+    }
     for (auto &weight : weights) {
       out << frame.poc << " " << weight.second << " " << weight.first << "\n";
     }
