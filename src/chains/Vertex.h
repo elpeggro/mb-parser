@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <iostream>
+#include <unordered_map>
 
 class Vertex {
  public:
@@ -23,7 +24,7 @@ class Vertex {
   void addSuccessor(const std::shared_ptr<Vertex> &successor, uint32_t weight) {
     successors_.push_back(successor);
     weights_.push_back(weight);
-    successor_chain_weights_.push_back(-1);
+    successor_chain_weights_.emplace_back();
   };
   uint32_t walk(uint32_t max_weight_influence, uint32_t mb_threshold, uint32_t depth);
   uint32_t getFrame() const { return frame_; }
@@ -32,7 +33,7 @@ class Vertex {
  private:
   uint32_t frame_;
   std::vector<std::shared_ptr<Vertex>> successors_;
-  std::vector<int32_t> successor_chain_weights_;
+  std::vector<std::unordered_map<uint32_t, uint32_t>> successor_chain_weights_;
   std::vector<uint32_t> weights_;
   uint32_t max_depth_;
 };
