@@ -10,4 +10,8 @@ set(MB_PARSER_SRC_FILES
         src/structs.h
         src/ReferenceGraph)
 
+set(CHAIN_WEIGHTS_SRC_FILES
+        src/chains/chain_weights.cpp src/chains/Graph.cpp src/chains/Graph.h src/chains/Vertex.cpp src/chains/Vertex.h)
+
 add_executable(mb_parser ${MB_PARSER_SRC_FILES})
+add_executable(chain_weights ${CHAIN_WEIGHTS_SRC_FILES})
